@@ -2,3 +2,6 @@ streamlit
 scikit-learn
 pandas
 numpy
+Sastrawi
+Keras-Preprocessing
+tensorflow
