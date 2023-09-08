@@ -1,7 +1,14 @@
 import streamlit as st
 import re
 import pickle
-from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.models import Sequential
+from sklearn.preprocessing import LabelEncoder
+import tensorflow as tf
+import string
 
 # Judul aplikasi
 st.title('Aplikasi Prediksi Kalimat')
@@ -13,6 +20,14 @@ user_input = st.text_area('Masukkan kalimat yang akan diprediksi:', '')
 def preprocess_text(text):
     text = re.sub(r'\[USERNAME]+', '', text)
     text = re.sub('[^\w\s]', '', text)
+    text = text.lower()
+    text = re.sub(r"\d+", "", text)
+    text = text.translate(str.maketrans("","",string.punctuation))
+    text = text.strip()
+    pisah = text.split()
+    factory = StopWordRemoverFactory()
+    stopword = factory.create_stop_word_remover()
+    text =  stopword.remove(text)
     return text
 
 # Tombol untuk memprediksi
@@ -20,18 +35,18 @@ if st.button('Prediksi'):
     cleaned_input = preprocess_text(user_input)
     if cleaned_input:
         # Memuat model yang telah difitkan sebelumnya
-        model = pickle.load(open('clf.pkl', 'rb'))
+        model = tf.keras.models.load_model('prediction_model.h5')
+        
+        tokenizer = pickle.load(open('tokenizer.pkl', 'rb'))
+        new_sequences = tokenizer.texts_to_sequences([cleaned_input])
+        new_X = pad_sequences(new_sequences, maxlen=100)
+        predictions = model.predict(new_X)
 
-        # Memuat vektor TF-IDF yang diperlukan
-        tfidf_vectorizer = TfidfVectorizer()
 
-        # Membaca data vektor TF-IDF yang telah difitkan sebelumnya
-        with open('tfidf_vectorizer.pkl', 'rb') as vectorizer_file:
-            tfidf_vectorizer = pickle.load(vectorizer_file)
+        label_encoder = pickle.load(open('label_encoder.pkl', 'rb'))
 
-        # Menggunakan model dan vektor TF-IDF yang telah difitkan sebelumnya untuk membuat prediksi
-        input_vector = tfidf_vectorizer.transform([cleaned_input])
-        prediction = model.predict(input_vector)
-        st.write('Hasil Prediksi:', prediction[0])
+
+        predicted_labels = label_encoder.inverse_transform(np.argmax(predictions, axis=1))
+        st.write('Hasil Prediksi:', predicted_labels)
     else:
         st.write('Teks input kosong. Masukkan kalimat untuk diprediksi.')
