@@ -35,7 +35,7 @@ if st.button('Prediksi'):
     cleaned_input = preprocess_text(user_input)
     if cleaned_input:
         # Memuat model yang telah difitkan sebelumnya
-        model = tf.keras.models.load_model('prediction_model.h5')
+        model = tf.keras.models.load_model('modeltiga.h5')
         
         tokenizer = pickle.load(open('tokenizer.pkl', 'rb'))
         new_sequences = tokenizer.texts_to_sequences([cleaned_input])
